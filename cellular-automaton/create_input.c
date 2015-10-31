@@ -46,20 +46,20 @@ int main(int argc, char ** argv)
     fwrite(&velocity, sizeof(double), 1, f);
     
     g.grid = calloc(g.nb_rows, sizeof(block_t*));
-    for (int r=0; r<g.nb_rows; r++)
+    for (size_t r=0; r<g.nb_rows; r++)
     {
       g.grid[r] = calloc(g.nb_columns, sizeof(block_t));
-      for (int c=0; c<g.nb_columns; c++) {
+      for (size_t c=0; c<g.nb_columns; c++) {
         g.grid[r][c].velocity = velocity;
       }
     }
     
     puts("Blocks type ? [V]ibrating / [W]all");
-    for (int r=0; r<g.nb_rows; r++)
+    for (size_t r=0; r<g.nb_rows; r++)
     {
       char s[g.nb_columns+1];
       scanf("%s", s);
-      for (int c=0; c<g.nb_rows; c++)
+      for (size_t c=0; c<g.nb_rows; c++)
       {
         if (s[c] == 'V')
           g.grid[r][c].type = 0x00;
@@ -74,13 +74,13 @@ int main(int argc, char ** argv)
     }
     
     puts("Blocks value ?");
-    for (int r=0; r<g.nb_rows; r++)
-      for (int c=0; c<g.nb_rows; c++)
+    for (size_t r=0; r<g.nb_rows; r++)
+      for (size_t c=0; c<g.nb_rows; c++)
         scanf("%lf", &g.grid[r][c].value);
     
-    for (int r=0; r<g.nb_rows; r++)
+    for (size_t r=0; r<g.nb_rows; r++)
     {
-      for (int c=0; c<g.nb_rows; c++)
+      for (size_t c=0; c<g.nb_rows; c++)
       {
         fwrite(&g.grid[r][c].type, sizeof(char), 1, f);
         fwrite(&g.grid[r][c].value, sizeof(double), 1, f);

@@ -1,11 +1,11 @@
 CC = gcc
-CFLAGS = -std=c99 -Wall -O2
+CFLAGS = -std=c99 -Wall -Wextra -O2
 SRC = main.c sequential.c
 OBJ= $(SRC:.c=.o)
 
 all: run
 
-%.o: %.c
+%.o: %.c Makefile
 	$(CC) -o $@ -c $< $(CFLAGS)
 
 run: $(OBJ)
