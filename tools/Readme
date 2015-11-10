@@ -1,0 +1,31 @@
+List of files:
+
+1) exemple_io.c _______________________________________________________________
+
+Small exemple on how to read the input format and write the output format on
+one single process. Note that it is possible to perform those read/write in
+parallel using MPI-IO, which is however much more complicated.
+
+If you are not using MPI-IO, only one process shall open the file (execute the
+load function), and data should then be redistributed using communications.
+The same way, writting should be done by a single process hosting all resuls.
+
+2) sample_type1.in & sample_type2.in __________________________________________
+
+Example of input files. Can be read by exemple_io.c
+
+3) viewer.py __________________________________________________________________
+
+Python script used for displaying the results. Have a look at
+$ ./viewer.py -h
+for more information about all parameters
+
+4) wave_128x128.out && wave_128x128.png _______________________________________
+
+Exemple of output file, and a .png produced by viewer.py from this result file.
+Command for generating the .png is
+./viewer -i wave_128x128.out -o wave_128x128.png -f png -s 128 128
+
+
+
+If you have any question, please fell free to contact me at hadrien.croubois@ens-lyon.fr

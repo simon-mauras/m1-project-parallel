@@ -3,8 +3,7 @@
 
 #include "types.h"
 
-void sequential(int arg_step,
-                char* arg_i,
+void sequential(char* arg_i,
                 int arg_iteration,
                 double arg_dt,
                 char* arg_lastdump,

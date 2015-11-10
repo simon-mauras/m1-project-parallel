@@ -3,7 +3,7 @@
 #include "types.h"
 #include "assert.h"
 
-static grid_t read_sequential(int step, char* input)
+static grid_t read_sequential(char* input)
 {
   FILE* f = fopen(input, "r");
   
@@ -13,13 +13,15 @@ static grid_t read_sequential(int step, char* input)
     exit(1);
   }
   
+  char type;
+  assert(fread(&type, sizeof(char), 1, f));
+  
   grid_t result;
   
-  if (step <= 3)
+  if (type == 0x01)
   {
     double velocity;
     
-    fseek(f, 1, SEEK_SET);
     assert(fread(&result.nb_columns, sizeof(size_t), 1, f));
     assert(fread(&result.nb_rows, sizeof(size_t), 1, f));
     assert(fread(&velocity, sizeof(double), 1, f));
@@ -37,6 +39,25 @@ static grid_t read_sequential(int step, char* input)
       }
     }
   }
+  else if (type == 0x02)
+  {
+    puts("Warning: File of type 2 detected.");
+    assert(fread(&result.nb_columns, sizeof(size_t), 1, f));
+    assert(fread(&result.nb_rows, sizeof(size_t), 1, f));
+    
+    assert(result.grid = calloc(result.nb_rows, sizeof(block_t*)));
+    for (size_t r=0; r<result.nb_rows; r++)
+    {
+      assert(result.grid[r] = calloc(result.nb_columns, sizeof(block_t)));
+      for (size_t c=0; c<result.nb_columns; c++)
+      {
+        assert(fread(&result.grid[r][c].type, sizeof(char), 1, f));
+        assert(fread(&result.grid[r][c].value, sizeof(double), 1, f));
+        assert(fread(&result.grid[r][c].velocity, sizeof(double), 1, f));
+        result.grid[r][c].dvalue = 0;
+      }
+    }
+  }
   
   fclose(f);
   
@@ -46,6 +67,13 @@ static grid_t read_sequential(int step, char* input)
 void export_sequential(grid_t* grid, char* filename)
 {
   FILE *f = fopen(filename, "w");
+  
+  if (f == NULL)
+  {
+    puts("Error: Can't create output file");
+    exit(1);
+  }
+  
   for (size_t r=0; r<grid->nb_rows; r++)
     for (size_t c=0; c<grid->nb_columns; c++)
       assert(fwrite(&(grid->grid[r][c].value), sizeof(double), 1, f));
@@ -87,15 +115,14 @@ void step_sequential(grid_t* grid, double dt)
   }
 }
 
-void sequential(int arg_step,
-                char* arg_i,
+void sequential(char* arg_i,
                 int arg_iteration,
                 double arg_dt,
                 char* arg_lastdump,
                 char* arg_alldump,
                 char* arg_sensor)
 {
-  grid_t grid = read_sequential(arg_step, arg_i);
+  grid_t grid = read_sequential(arg_i);
   
   for (int i=0; i<arg_iteration; i++)
   {

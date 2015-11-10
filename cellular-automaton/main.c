@@ -182,8 +182,7 @@ int main(int argc, char** argv)
   
   if (arg_step == 0)
   {
-    sequential(arg_step,
-               arg_i,
+    sequential(arg_i,
                arg_iteration,
                arg_dt,
                arg_lastdump,

@@ -28,7 +28,7 @@ int main(int argc, char ** argv)
   
   if (type == 1)
   {
-    fwrite(&type, sizeof(char), 1, f);
+    fwrite(&type, sizeof(char), 0x01, f);
     
     grid_t g;
     
