@@ -47,7 +47,7 @@ void export_sequential(grid_t* grid, char* filename)
 {
   FILE *f = fopen(filename, "w");
   for (size_t r=0; r<grid->nb_rows; r++)
-    for (size_t c=0; c<grid->nb_rows; c++)
+    for (size_t c=0; c<grid->nb_columns; c++)
       assert(fwrite(&(grid->grid[r][c].value), sizeof(double), 1, f));
   fclose(f);
 }
@@ -58,25 +58,31 @@ void step_sequential(grid_t* grid, double dt)
   double dv[grid->nb_rows][grid->nb_columns];
   for (size_t r=0; r<grid->nb_rows; r++)
   {
-    for (size_t c=0; c<grid->nb_rows; c++)
+    for (size_t c=0; c<grid->nb_columns; c++)
     {
-      double v2 = grid->grid[r][c].velocity * grid->grid[r][c].velocity;
-      v[r][c] = grid->grid[r][c].value + dt * grid->grid[r][c].dvalue;
-      dv[r][c] = grid->grid[r][c].dvalue;
-      dv[r][c] -= dt * v2 * 4 * grid->grid[r][c].value;
-      dv[r][c] += dt * v2 * grid->grid[(r-1+grid->nb_rows)%grid->nb_rows][c].value;
-      dv[r][c] += dt * v2 * grid->grid[(r+1+grid->nb_rows)%grid->nb_rows][c].value;
-      dv[r][c] += dt * v2 * grid->grid[r][(c-1+grid->nb_columns)%grid->nb_columns].value;
-      dv[r][c] += dt * v2 * grid->grid[r][(c+1+grid->nb_columns)%grid->nb_columns].value;
+      if (grid->grid[r][c].type == VIBRATING)
+      {
+        double v2 = grid->grid[r][c].velocity * grid->grid[r][c].velocity;
+        v[r][c] = grid->grid[r][c].value + dt * grid->grid[r][c].dvalue;
+        dv[r][c] = grid->grid[r][c].dvalue;
+        dv[r][c] -= dt * v2 * 4 * grid->grid[r][c].value;
+        dv[r][c] += dt * v2 * grid->grid[(r+grid->nb_rows-1)%grid->nb_rows][c].value;
+        dv[r][c] += dt * v2 * grid->grid[(r+grid->nb_rows+1)%grid->nb_rows][c].value;
+        dv[r][c] += dt * v2 * grid->grid[r][(c+grid->nb_columns-1)%grid->nb_columns].value;
+        dv[r][c] += dt * v2 * grid->grid[r][(c+grid->nb_columns+1)%grid->nb_columns].value;
+      }
     }
   }
   
   for (size_t r=0; r<grid->nb_rows; r++)
   {
-    for (size_t c=0; c<grid->nb_rows; c++)
+    for (size_t c=0; c<grid->nb_columns; c++)
     {
-      grid->grid[r][c].value = v[r][c];
-      grid->grid[r][c].dvalue = dv[r][c];
+      if (grid->grid[r][c].type == VIBRATING)
+      {
+        grid->grid[r][c].value = v[r][c];
+        grid->grid[r][c].dvalue = dv[r][c];
+      }
     }
   }
 }

@@ -29,9 +29,9 @@ int main(int argc, char** argv)
       double value;
       fread(&value, sizeof(double), 1, in);
       if (value > 1) value = 1;
-      if (value < 0) value = 0;
-      int v = (1-value)  * 65535;
-      fprintf(out, " %d%c", v, c == nb_columns-1 ? '\n' : ' ');
+      if (value < -1) value = -1;
+      int v = (1+value)/2  * 65535;
+      fprintf(out, "%d%c", v, v == nb_columns-1 ? '\n' : ' ');
     }
   }
   

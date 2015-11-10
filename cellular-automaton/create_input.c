@@ -62,9 +62,9 @@ int main(int argc, char ** argv)
       for (size_t c=0; c<g.nb_rows; c++)
       {
         if (s[c] == 'V')
-          g.grid[r][c].type = 0x00;
+          g.grid[r][c].type = VIBRATING;
         else if (s[c] == 'W')
-          g.grid[r][c].type = 0x01;
+          g.grid[r][c].type = WALL;
         else
         {
           puts("Error: Wrong type");

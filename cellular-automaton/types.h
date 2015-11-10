@@ -1,6 +1,9 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+extern const char VIBRATING;
+extern const char WALL;
+
 typedef struct {
   char type;
   double value;
