@@ -1,8 +1,12 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
+#include "time.h"
 
 #include "sequential.h"
+
+#include "mpi.h"
+#include "distributed.h"
 
 static int arg_step;
 static char* arg_i;
@@ -180,6 +184,8 @@ int main(int argc, char** argv)
 {
   args(argc, argv);
   
+  srand(time(NULL));
+  
   if (arg_step == 0)
   {
     sequential(arg_i,
@@ -188,5 +194,16 @@ int main(int argc, char** argv)
                arg_lastdump,
                arg_alldump,
                arg_sensor);
+  }
+  else
+  {
+    init_distributed(argc, argv, arg_grid_x, arg_grid_y);
+    distributed(arg_i,
+                arg_iteration,
+                arg_dt,
+                arg_lastdump,
+                arg_alldump,
+                arg_sensor);
+    exit_distributed(0);
   }
 }

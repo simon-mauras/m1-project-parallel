@@ -1,6 +1,6 @@
-CC = gcc
+CC = mpicc
 CFLAGS = -std=c99 -Wall -Wextra -O2
-SRC = types.c main.c sequential.c
+SRC = types.c main.c sequential.c distributed.c
 OBJ= $(SRC:.c=.o)
 
 all: run create_input display_output

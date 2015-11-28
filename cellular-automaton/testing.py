@@ -16,7 +16,8 @@ for t in glob.glob("tests/*.in") :
   test_rows = struct.unpack('Q', f.read(8))[0]
   f.close()
   print("Simulation...")
-  os.system("./run -step 0 -i " + test + ".in -iteration 10000 -dt 1e-2 -grid 1 1 -alldump " + test + "_%05d.dump")
+  os.system("time ./run -step 0 -i " + test + ".in -iteration 10000 -dt 1e-2 -grid 1 1 -lastdump " + test + "_last.dump")
+#  os.system("time mpirun -n 16 ./run -step 1 -i " + test + ".in -iteration 10000 -dt 1e-2 -grid 4 4 -lastdump " + test + "_last.dump")
   print("Analysis of the binary output files...")
   mod = 0
   for dump in sorted(glob.glob(test + "_*.dump")) :

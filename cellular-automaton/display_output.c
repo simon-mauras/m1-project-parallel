@@ -19,7 +19,7 @@ int main(int argc, char** argv)
   if (out == NULL) return 0;
   
   fprintf(out, "P2\n");
-  fprintf(out, "%d %d\n", nb_rows, nb_columns);
+  fprintf(out, "%d %d\n", nb_columns, nb_rows);
   fprintf(out, "65535\n");
   
   for (int r=0; r<nb_rows; r++)

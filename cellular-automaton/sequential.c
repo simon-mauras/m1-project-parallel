@@ -3,7 +3,7 @@
 #include "types.h"
 #include "assert.h"
 
-static grid_t read_sequential(char* input)
+static void read_sequential(char* input, grid_t* result)
 {
   FILE* f = fopen(input, "r");
   
@@ -16,55 +16,51 @@ static grid_t read_sequential(char* input)
   char type;
   assert(fread(&type, sizeof(char), 1, f));
   
-  grid_t result;
-  
   if (type == 0x01)
   {
     double velocity;
     
-    assert(fread(&result.nb_columns, sizeof(size_t), 1, f));
-    assert(fread(&result.nb_rows, sizeof(size_t), 1, f));
+    assert(fread(&(result->nb_columns), sizeof(size_t), 1, f));
+    assert(fread(&(result->nb_rows), sizeof(size_t), 1, f));
     assert(fread(&velocity, sizeof(double), 1, f));
     
-    assert(result.grid = calloc(result.nb_rows, sizeof(block_t*)));
-    for (size_t r=0; r<result.nb_rows; r++)
+    assert(result->grid = calloc(result->nb_rows, sizeof(block_t*)));
+    for (size_t r=0; r<result->nb_rows; r++)
     {
-      assert(result.grid[r] = calloc(result.nb_columns, sizeof(block_t)));
-      for (size_t c=0; c<result.nb_columns; c++)
+      assert(result->grid[r] = calloc(result->nb_columns, sizeof(block_t)));
+      for (size_t c=0; c<result->nb_columns; c++)
       {
-        assert(fread(&result.grid[r][c].type, sizeof(char), 1, f));
-        assert(fread(&result.grid[r][c].value, sizeof(double), 1, f));
-        result.grid[r][c].velocity = velocity;
-        result.grid[r][c].dvalue = 0;
+        assert(fread(&(result->grid[r][c].type), sizeof(char), 1, f));
+        assert(fread(&(result->grid[r][c].value), sizeof(double), 1, f));
+        result->grid[r][c].velocity = velocity;
+        result->grid[r][c].dvalue = 0;
       }
     }
   }
   else if (type == 0x02)
   {
     puts("Warning: File of type 2 detected.");
-    assert(fread(&result.nb_columns, sizeof(size_t), 1, f));
-    assert(fread(&result.nb_rows, sizeof(size_t), 1, f));
+    assert(fread(&(result->nb_columns), sizeof(size_t), 1, f));
+    assert(fread(&(result->nb_rows), sizeof(size_t), 1, f));
     
-    assert(result.grid = calloc(result.nb_rows, sizeof(block_t*)));
-    for (size_t r=0; r<result.nb_rows; r++)
+    assert(result->grid = calloc(result->nb_rows, sizeof(block_t*)));
+    for (size_t r=0; r<result->nb_rows; r++)
     {
-      assert(result.grid[r] = calloc(result.nb_columns, sizeof(block_t)));
-      for (size_t c=0; c<result.nb_columns; c++)
+      assert(result->grid[r] = calloc(result->nb_columns, sizeof(block_t)));
+      for (size_t c=0; c<result->nb_columns; c++)
       {
-        assert(fread(&result.grid[r][c].type, sizeof(char), 1, f));
-        assert(fread(&result.grid[r][c].value, sizeof(double), 1, f));
-        assert(fread(&result.grid[r][c].velocity, sizeof(double), 1, f));
-        result.grid[r][c].dvalue = 0;
+        assert(fread(&(result->grid[r][c].type), sizeof(char), 1, f));
+        assert(fread(&(result->grid[r][c].value), sizeof(double), 1, f));
+        assert(fread(&(result->grid[r][c].velocity), sizeof(double), 1, f));
+        result->grid[r][c].dvalue = 0;
       }
     }
   }
   
   fclose(f);
-  
-  return result;
 }
 
-void export_sequential(grid_t* grid, char* filename)
+static void export_sequential(char* filename, grid_t* grid)
 {
   FILE *f = fopen(filename, "w");
   
@@ -80,7 +76,7 @@ void export_sequential(grid_t* grid, char* filename)
   fclose(f);
 }
 
-void step_sequential(grid_t* grid, double dt)
+static void step_sequential(grid_t* grid, double dt)
 {
   double v[grid->nb_rows][grid->nb_columns];
   double dv[grid->nb_rows][grid->nb_columns];
@@ -122,7 +118,8 @@ void sequential(char* arg_i,
                 char* arg_alldump,
                 char* arg_sensor)
 {
-  grid_t grid = read_sequential(arg_i);
+  grid_t grid;
+  read_sequential(arg_i, &grid);
   
   for (int i=0; i<arg_iteration; i++)
   {
@@ -131,10 +128,10 @@ void sequential(char* arg_i,
     {
       char s[256];
       sprintf(s, arg_alldump, i);
-      export_sequential(&grid, s);
+      export_sequential(s, &grid);
     }
   }
   
   if (arg_lastdump != NULL)
-    export_sequential(&grid, arg_lastdump);
+    export_sequential(arg_lastdump, &grid);
 }
