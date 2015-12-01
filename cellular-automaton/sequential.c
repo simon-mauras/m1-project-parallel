@@ -20,8 +20,8 @@ static void read_sequential(char* input, grid_t* result)
   {
     double velocity;
     
-    assert(fread(&(result->nb_columns), sizeof(size_t), 1, f));
     assert(fread(&(result->nb_rows), sizeof(size_t), 1, f));
+    assert(fread(&(result->nb_columns), sizeof(size_t), 1, f));
     assert(fread(&velocity, sizeof(double), 1, f));
     
     assert(result->grid = calloc(result->nb_rows, sizeof(block_t*)));
@@ -40,8 +40,8 @@ static void read_sequential(char* input, grid_t* result)
   else if (type == 0x02)
   {
     puts("Warning: File of type 2 detected.");
-    assert(fread(&(result->nb_columns), sizeof(size_t), 1, f));
     assert(fread(&(result->nb_rows), sizeof(size_t), 1, f));
+    assert(fread(&(result->nb_columns), sizeof(size_t), 1, f));
     
     assert(result->grid = calloc(result->nb_rows, sizeof(block_t*)));
     for (size_t r=0; r<result->nb_rows; r++)
@@ -80,21 +80,13 @@ static void step_sequential(grid_t* grid, double dt)
 {
   double v[grid->nb_rows][grid->nb_columns];
   double dv[grid->nb_rows][grid->nb_columns];
+  
   for (size_t r=0; r<grid->nb_rows; r++)
   {
     for (size_t c=0; c<grid->nb_columns; c++)
     {
-      if (grid->grid[r][c].type == VIBRATING)
-      {
-        double v2 = grid->grid[r][c].velocity * grid->grid[r][c].velocity;
-        v[r][c] = grid->grid[r][c].value + dt * grid->grid[r][c].dvalue;
-        dv[r][c] = grid->grid[r][c].dvalue;
-        dv[r][c] -= dt * v2 * 4 * grid->grid[r][c].value;
-        dv[r][c] += dt * v2 * grid->grid[(r+grid->nb_rows-1)%grid->nb_rows][c].value;
-        dv[r][c] += dt * v2 * grid->grid[(r+grid->nb_rows+1)%grid->nb_rows][c].value;
-        dv[r][c] += dt * v2 * grid->grid[r][(c+grid->nb_columns-1)%grid->nb_columns].value;
-        dv[r][c] += dt * v2 * grid->grid[r][(c+grid->nb_columns+1)%grid->nb_columns].value;
-      }
+      v[r][c] = grid->grid[r][c].value;
+      dv[r][c] = grid->grid[r][c].dvalue;
     }
   }
   
@@ -104,8 +96,14 @@ static void step_sequential(grid_t* grid, double dt)
     {
       if (grid->grid[r][c].type == VIBRATING)
       {
-        grid->grid[r][c].value = v[r][c];
-        grid->grid[r][c].dvalue = dv[r][c];
+        double v2 = grid->grid[r][c].velocity * grid->grid[r][c].velocity;
+        grid->grid[r][c].value = v[r][c] + dt * dv[r][c];
+        grid->grid[r][c].dvalue  = dv[r][c];
+        grid->grid[r][c].dvalue -= dt * v2 * 4 * v[r][c];
+        grid->grid[r][c].dvalue += dt * v2 * v[(r+grid->nb_rows-1)%grid->nb_rows][c];
+        grid->grid[r][c].dvalue += dt * v2 * v[(r+grid->nb_rows+1)%grid->nb_rows][c];
+        grid->grid[r][c].dvalue += dt * v2 * v[r][(c+grid->nb_columns-1)%grid->nb_columns];
+        grid->grid[r][c].dvalue += dt * v2 * v[r][(c+grid->nb_columns+1)%grid->nb_columns];
       }
     }
   }

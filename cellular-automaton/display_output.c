@@ -6,8 +6,8 @@ int main(int argc, char** argv)
     return 0;
   
   int nb_rows = -1, nb_columns = -1;
-  sscanf(argv[3], "%d", &nb_columns);
-  sscanf(argv[4], "%d", &nb_rows);
+  sscanf(argv[3], "%d", &nb_rows);
+  sscanf(argv[4], "%d", &nb_columns);
   
   if (nb_rows == -1) return 0;
   if (nb_columns == -1) return 0;
@@ -31,7 +31,7 @@ int main(int argc, char** argv)
       if (value > 1) value = 1;
       if (value < -1) value = -1;
       int v = (1+value)/2  * 65535;
-      fprintf(out, "%d%c", v, v == nb_columns-1 ? '\n' : ' ');
+      fprintf(out, "%d%c", v, c == nb_columns-1 ? '\n' : ' ');
     }
   }
   

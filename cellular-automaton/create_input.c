@@ -32,13 +32,13 @@ int main(int argc, char ** argv)
     
     grid_t g;
     
-    puts("Number of columns ?");
-    scanf("%lu", &g.nb_columns);
-    fwrite(&g.nb_columns, sizeof(size_t), 1, f);
-    
     puts("Number of rows ?");
     scanf("%lu", &g.nb_rows);
     fwrite(&g.nb_rows, sizeof(size_t), 1, f);
+    
+    puts("Number of columns ?");
+    scanf("%lu", &g.nb_columns);
+    fwrite(&g.nb_columns, sizeof(size_t), 1, f);
     
     double velocity;
     puts("Velocity ?");

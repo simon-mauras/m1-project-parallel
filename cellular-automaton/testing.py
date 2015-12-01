@@ -1,33 +1,40 @@
 #! /usr/bin/python3
 
-import os, glob, re, struct
+import os, sys, glob, struct
 
-for t in glob.glob("tests/*.env") :
+def create(t) :
   test = '.'.join(t.split('.')[:-1])
   print("Creation of the binary input file : " + test)
   os.system("./create_input " + test + ".in < " + test + ".env > /dev/null")
 
-for t in glob.glob("tests/*.in") :
+def test(t) :
   test = '.'.join(t.split('.')[:-1])
   print("---------- " + test + " ----------")
   f = open(t, "rb")
   test_type = struct.unpack('B', f.read(1))[0]
-  test_cols = struct.unpack('Q', f.read(8))[0]
   test_rows = struct.unpack('Q', f.read(8))[0]
+  test_cols = struct.unpack('Q', f.read(8))[0]
   f.close()
   print("Simulation...")
   os.system("time ./run -step 0 -i " + test + ".in -iteration 10000 -dt 1e-2 -grid 1 1 -lastdump " + test + "_last.dump")
-#  os.system("time mpirun -n 16 ./run -step 1 -i " + test + ".in -iteration 10000 -dt 1e-2 -grid 4 4 -lastdump " + test + "_last.dump")
+#  os.system("time mpirun -n 4 ./run -step 1 -i " + test + ".in -iteration 10000 -dt 1e-2 -grid 2 2 -lastdump " + test + "_last.dump")
   print("Analysis of the binary output files...")
   mod = 0
   for dump in sorted(glob.glob(test + "_*.dump")) :
     if mod == 0 :
       mod = 30
       base = '.'.join(dump.split('.')[:-1])
-      os.system("./display_output " + dump + " " + base + ".pgm " + str(test_cols) + " " + str(test_rows))
+      os.system("./display_output " + dump + " " + base + ".pgm " + str(test_rows) + " " + str(test_cols))
     os.system("rm " + dump)
     mod = mod-1
   print("Export...")
   os.system("convert -delay 5 -loop 0 " + test + "_*.pgm " + test + ".gif")
   os.system("rm " + test + "_*.pgm")
   print("Done !")
+
+
+if len(sys.argv) >= 2 :
+  for t in sys.argv[1:] : test(t)
+else :
+  for t in glob.glob("tests/*.env") : create(t)
+  for t in glob.glob("tests/*.in") :  test(t)

@@ -41,14 +41,14 @@ void init_distributed(int argc, char** argv, int arg_grid_x, int arg_grid_y)
     exit_distributed(1);
   }
   
-	MPI_Comm_split(MPI_COMM_WORLD, rank%arg_grid_x, rank, &COMM_COL);
 	MPI_Comm_split(MPI_COMM_WORLD, rank/arg_grid_y, rank, &COMM_ROW);
+	MPI_Comm_split(MPI_COMM_WORLD, rank%arg_grid_x, rank, &COMM_COL);
 	
-  MPI_Comm_rank(COMM_COL, &rank_col);
   MPI_Comm_rank(COMM_ROW, &rank_row);
+  MPI_Comm_rank(COMM_COL, &rank_col);
   
-  MPI_Comm_size(COMM_COL, &size_col);
   MPI_Comm_size(COMM_ROW, &size_row);
+  MPI_Comm_size(COMM_COL, &size_col);
 }
 
 static void read_distributed(char* input, grid_t* result)
@@ -58,11 +58,11 @@ static void read_distributed(char* input, grid_t* result)
   
   char type;
   MPI_File_read(f, &type, 1, MPI_CHAR, MPI_STATUS_IGNORE);
-  MPI_File_read(f, &(result->nb_columns), 1, MPI_UNSIGNED_LONG, MPI_STATUS_IGNORE);
   MPI_File_read(f, &(result->nb_rows), 1, MPI_UNSIGNED_LONG, MPI_STATUS_IGNORE);
+  MPI_File_read(f, &(result->nb_columns), 1, MPI_UNSIGNED_LONG, MPI_STATUS_IGNORE);
   
-  size_t cols = pos(result->nb_columns, rank_row+1, size_row) - pos(result->nb_columns, rank_row, size_row);
   size_t rows = pos(result->nb_rows, rank_col+1, size_col) - pos(result->nb_rows, rank_col, size_col);
+  size_t cols = pos(result->nb_columns, rank_row+1, size_row) - pos(result->nb_columns, rank_row, size_row);
   
   assert(result->grid = calloc(rows, sizeof(block_t*)));
   for (size_t r=0; r<rows; r++)
@@ -122,8 +122,8 @@ static void export_distributed(char* filename, grid_t* grid)
   MPI_File f;
   MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &f);
   
-  size_t cols = pos(grid->nb_columns, rank_row+1, size_row) - pos(grid->nb_columns, rank_row, size_row);
   size_t rows = pos(grid->nb_rows, rank_col+1, size_col) - pos(grid->nb_rows, rank_col, size_col);
+  size_t cols = pos(grid->nb_columns, rank_row+1, size_row) - pos(grid->nb_columns, rank_row, size_row);
   
   size_t inf = pos(grid->nb_columns, rank_row, size_row) * sizeof(double);
   size_t sup = pos(grid->nb_columns, rank_row+1, size_row) * sizeof(double);
@@ -240,15 +240,15 @@ static void share_cols(double** v, double** dv, size_t cols, size_t rows)
 
 static void step_distributed(grid_t* grid, double dt)
 {
-  size_t cols = pos(grid->nb_columns, rank_row+1, size_row) - pos(grid->nb_columns, rank_row, size_row);
   size_t rows = pos(grid->nb_rows, rank_col+1, size_col) - pos(grid->nb_rows, rank_col, size_col);
+  size_t cols = pos(grid->nb_columns, rank_row+1, size_row) - pos(grid->nb_columns, rank_row, size_row);
   
   double **v = calloc(rows+2, sizeof(double*));
   double **dv = calloc(rows+2, sizeof(double*));
   for (size_t r=0; r<rows+2; r++)
   {
-    v[r] = calloc(rows+2, sizeof(double));
-    dv[r] = calloc(rows+2, sizeof(double));
+    v[r] = calloc(cols+2, sizeof(double));
+    dv[r] = calloc(cols+2, sizeof(double));
   }
   
   for (size_t r=0; r<rows; r++)
@@ -263,8 +263,8 @@ static void step_distributed(grid_t* grid, double dt)
     }
   }
   
-  share_cols(v, dv, cols, rows);
   share_rows(v, dv, cols, rows);
+  share_cols(v, dv, cols, rows);
   
   for (size_t r=0; r<rows; r++)
   {
@@ -302,7 +302,6 @@ void distributed(char* arg_i,
 {
   grid_t grid;
   read_distributed(arg_i, &grid);
-  
   for (int i=0; i<arg_iteration; i++)
   {
     step_distributed(&grid, arg_dt);
