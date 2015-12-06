@@ -60,6 +60,7 @@ static void read_distributed(char* input, grid_t* result)
   MPI_File_read(f, &type, 1, MPI_CHAR, MPI_STATUS_IGNORE);
   MPI_File_read(f, &(result->nb_rows), 1, MPI_UNSIGNED_LONG, MPI_STATUS_IGNORE);
   MPI_File_read(f, &(result->nb_columns), 1, MPI_UNSIGNED_LONG, MPI_STATUS_IGNORE);
+  result->nb_records = 0;
   
   size_t rows = pos(result->nb_rows, rank_col+1, size_col) - pos(result->nb_rows, rank_col, size_col);
   size_t cols = pos(result->nb_columns, rank_row+1, size_row) - pos(result->nb_columns, rank_row, size_row);
@@ -88,6 +89,8 @@ static void read_distributed(char* input, grid_t* result)
         MPI_File_read(f, &(result->grid[r][c].value), 1, MPI_DOUBLE, MPI_STATUS_IGNORE);
         result->grid[r][c].dvalue = 0;
         result->grid[r][c].velocity = velocity;
+        if (result->grid[r][c].type == SENSOR)
+          result->nb_records++;
       }
       MPI_File_seek(f, end - sup, MPI_SEEK_CUR);
     }
@@ -109,6 +112,8 @@ static void read_distributed(char* input, grid_t* result)
         MPI_File_read(f, &(result->grid[r][c].value), 1, MPI_DOUBLE, MPI_STATUS_IGNORE);
         MPI_File_read(f, &(result->grid[r][c].velocity), 1, MPI_DOUBLE, MPI_STATUS_IGNORE);
         result->grid[r][c].dvalue = 0;
+        if (result->grid[r][c].type == SENSOR)
+          result->nb_records++;
       }
       MPI_File_seek(f, end - sup, MPI_SEEK_CUR);
     }
@@ -148,6 +153,37 @@ static void export_distributed(char* filename, grid_t* grid)
   
   MPI_File_close(&f);
 }
+
+static void sensor_distributed(char* filename, grid_t* grid)
+{
+  MPI_File f;
+  MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_WRONLY | MPI_MODE_CREATE, MPI_INFO_NULL, &f);
+  
+  size_t row_start = pos(grid->nb_rows, rank_col, size_col);
+  size_t col_start = pos(grid->nb_columns, rank_row, size_row);
+  
+  size_t nb_rows = pos(grid->nb_rows, rank_col+1, size_col) - row_start;
+  size_t nb_cols = pos(grid->nb_columns, rank_row+1, size_row) - col_start;
+  
+  
+  if (grid->nb_records > 0)
+  {
+    char *start_buffer, *end_buffer;
+    assert(start_buffer = end_buffer = calloc(100*grid->nb_records, sizeof(char)));
+    size_t id_record = 0;
+    for (size_t r=0; r<nb_rows; r++)
+      for (size_t c=0; c<nb_cols; c++)
+        if (grid->grid[r][c].type == SENSOR)
+          end_buffer += sprintf(end_buffer, "%lu %lu %lf\n", r + row_start, c + col_start, grid->records[id_record++]);
+    
+    MPI_File_write_shared(f, start_buffer, end_buffer - start_buffer, MPI_CHAR, MPI_STATUS_IGNORE);
+    
+    free(start_buffer);
+  }
+  
+  MPI_File_close(&f);
+}
+
 
 static void send_row(double** v, size_t cols, size_t row_from, size_t row_to, int from, int to)
 {
@@ -262,11 +298,8 @@ static void step_distributed(grid_t* grid, double dt)
   {
     for (size_t c=0; c<cols; c++)
     {
-      if (grid->grid[r][c].type == VIBRATING)
-      {
-        v[r+1][c+1] = grid->grid[r][c].value;
-        dv[r+1][c+1] = grid->grid[r][c].dvalue;
-      }
+      v[r+1][c+1] = grid->grid[r][c].value;
+      dv[r+1][c+1] = grid->grid[r][c].dvalue;
     }
   }
   
@@ -277,7 +310,7 @@ static void step_distributed(grid_t* grid, double dt)
   {
     for (size_t c=0; c<cols; c++)
     {
-      if (grid->grid[r][c].type == VIBRATING)
+      if (grid->grid[r][c].type == VIBRATING || grid->grid[r][c].type == SENSOR)
       {
         double v2 = grid->grid[r][c].velocity * grid->grid[r][c].velocity;
         grid->grid[r][c].value = v[r+1][c+1] + dt * dv[r+1][c+1];
@@ -295,7 +328,7 @@ static void step_distributed(grid_t* grid, double dt)
   for (size_t r=0; r<rows; r++)
     for (size_t c=0; c<cols; c++)
       if (grid->grid[r][c].type == SENSOR)
-        grid->records[id_record++] = grid->grid[r][c].value * grid->grid[r][c].value;
+        grid->records[id_record++] += grid->grid[r][c].value * grid->grid[r][c].value;
   
   for (size_t r=0; r<rows+2; r++)
   {
@@ -328,4 +361,7 @@ void distributed(char* arg_i,
   
   if (arg_lastdump != NULL)
     export_distributed(arg_lastdump, &grid);
+    
+  if (arg_sensor != NULL)
+    sensor_distributed(arg_sensor, &grid);
 }
