@@ -65,6 +65,8 @@ int main(int argc, char ** argv)
           g.grid[r][c].type = VIBRATING;
         else if (s[c] == 'W')
           g.grid[r][c].type = WALL;
+        else if (s[c] == 'S')
+          g.grid[r][c].type = SENSOR;
         else
         {
           puts("Error: Wrong type");

@@ -1,5 +1,5 @@
 CC = mpicc
-CFLAGS = -std=c99 -Wall -Wextra -O2
+CFLAGS = -std=c99 -Wall -Wextra -O3
 SRC = types.c main.c sequential.c distributed.c
 OBJ= $(SRC:.c=.o)
 

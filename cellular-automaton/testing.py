@@ -16,7 +16,7 @@ def test(t) :
   test_cols = struct.unpack('Q', f.read(8))[0]
   f.close()
   print("Simulation...")
-  os.system("time ./run -step 0 -i " + test + ".in -iteration 10000 -dt 1e-2 -grid 1 1 -lastdump " + test + "_last.dump")
+  os.system("time ./run -step 0 -i " + test + ".in -iteration 20000 -dt 1e-2 -grid 1 1 -alldump " + test + "_%05d.dump -sensor " + test + ".log")
 #  os.system("time mpirun -n 4 ./run -step 1 -i " + test + ".in -iteration 10000 -dt 1e-2 -grid 2 2 -lastdump " + test + "_last.dump")
   print("Analysis of the binary output files...")
   mod = 0

@@ -114,6 +114,13 @@ static void read_distributed(char* input, grid_t* result)
     }
   }
   
+  assert(result->records = calloc(result->nb_records, sizeof(double)));
+  size_t id_record = 0;
+  for (size_t r=0; r<rows; r++)
+    for (size_t c=0; c<cols; c++)
+      if (result->grid[r][c].type == SENSOR)
+        result->records[id_record++] = result->grid[r][c].value * result->grid[r][c].value;
+  
   MPI_File_close(&f);
 }
 
@@ -283,6 +290,12 @@ static void step_distributed(grid_t* grid, double dt)
       }
     }
   }
+  
+  size_t id_record = 0;
+  for (size_t r=0; r<rows; r++)
+    for (size_t c=0; c<cols; c++)
+      if (grid->grid[r][c].type == SENSOR)
+        grid->records[id_record++] = grid->grid[r][c].value * grid->grid[r][c].value;
   
   for (size_t r=0; r<rows+2; r++)
   {

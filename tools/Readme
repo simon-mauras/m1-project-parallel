@@ -12,7 +12,7 @@ The same way, writting should be done by a single process hosting all resuls.
 
 2) sample_type1.in & sample_type2.in __________________________________________
 
-Example of input files. Can be read by exemple_io.c
+Example of input files. Can be read by exemple_io.c. Cells are stored in row-major order.
 
 3) viewer.py __________________________________________________________________
 

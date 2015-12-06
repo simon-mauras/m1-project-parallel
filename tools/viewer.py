@@ -109,9 +109,9 @@ class Img:
 		if param.min <= 0.0 and param.log:
 			param.min = 0.01
 		if param.log:
-			self.img = axe.imshow(numpy.ones((args.size[1], args.size[0])), interpolation = 'none', cmap = param.cmap, norm=matplotlib.colors.LogNorm(), vmin=param.min, vmax=param.max)
+			self.img = axe.imshow(numpy.ones((args.size[0], args.size[1])), interpolation = 'none', cmap = param.cmap, norm=matplotlib.colors.LogNorm(), vmin=param.min, vmax=param.max)
 		else:
-			self.img = axe.imshow(numpy.ones((args.size[1], args.size[0])), interpolation = 'none', cmap = param.cmap, vmin=param.min, vmax=param.max)
+			self.img = axe.imshow(numpy.ones((args.size[0], args.size[1])), interpolation = 'none', cmap = param.cmap, vmin=param.min, vmax=param.max)
 	def set(self, data):
 		self.img.set_data(data)
 
@@ -150,7 +150,7 @@ class Params:
 d_map = matplotlib.cm.get_cmap('seismic')
 d_map.set_bad((0,0,0))
 
-ratio = numpy.sqrt(args.size[0] / args.size[1])
+ratio = numpy.sqrt(args.size[1] / args.size[0])
 
 win = Window(figsize = (10*ratio,10/ratio))
 win.addImg(Params().setCmap(d_map).setMin(args.min).setMax(args.max).setLog(False))
@@ -164,9 +164,9 @@ def updateWindow(frame = 0):
 	sys.stdout.write('[ Rendering frame %d ]\n' % frame)
 	t1 = current_milli_time()
 	if args.numframe is 0:
-		data = Data.readRawFile(args.input, (args.size[1], args.size[0]))
+		data = Data.readRawFile(args.input, (args.size[0], args.size[1]))
 	else:
-		data = Data.readRawFile(args.input % frame, (args.size[1], args.size[0]))
+		data = Data.readRawFile(args.input % frame, (args.size[0], args.size[1]))
 	t2 = current_milli_time()
 	sys.stdout.write('- input:    %d ms\n' % (t2 - t1))
 	win.update(data)
