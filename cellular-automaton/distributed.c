@@ -42,7 +42,7 @@ void init_distributed(int argc, char** argv, int arg_grid_x, int arg_grid_y)
   }
   
 	MPI_Comm_split(MPI_COMM_WORLD, rank/arg_grid_y, rank, &COMM_ROW);
-	MPI_Comm_split(MPI_COMM_WORLD, rank%arg_grid_x, rank, &COMM_COL);
+	MPI_Comm_split(MPI_COMM_WORLD, rank%arg_grid_y, rank, &COMM_COL);
 	
   MPI_Comm_rank(COMM_ROW, &rank_row);
   MPI_Comm_rank(COMM_COL, &rank_col);
