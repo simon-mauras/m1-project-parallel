@@ -184,101 +184,28 @@ static void sensor_distributed(char* filename, grid_t* grid)
   MPI_File_close(&f);
 }
 
-
-static void send_row(double** v, size_t cols, size_t row_from, size_t row_to, int from, int to)
+static void share_rows(double* v, size_t cols, size_t rows)
 {
-  if (rank_col == from)
-    MPI_Send(v[row_from], cols, MPI_DOUBLE, to, 0, COMM_COL);
-  if (rank_col == to)
-    MPI_Recv(v[row_to], cols, MPI_DOUBLE, from, 0, COMM_COL, MPI_STATUS_IGNORE);
+  int next = (rank_col + 1) % size_col;
+  int prev = (rank_col + size_col - 1) % size_col;
+  MPI_Datatype t;
+  MPI_Type_vector(cols+2, 1, 1, MPI_DOUBLE, &t);
+  MPI_Type_commit(&t);
+  MPI_Sendrecv(v+(cols+2)*rows, 1, t, next, 0, v, 1, t, prev, 0, COMM_COL, MPI_STATUS_IGNORE);
+  MPI_Sendrecv(v+(cols+2), 1, t, prev, 0, v+(cols+2)*(rows+1), 1, t, next, 0, COMM_COL, MPI_STATUS_IGNORE);
+  MPI_Type_free(&t);
 }
 
-static void share_rows(double** v, double** dv, size_t cols, size_t rows)
+static void share_cols(double* v, size_t cols, size_t rows)
 {
-  int CPU_A, CPU_B;
-  
-  CPU_A = size_col-1;
-  CPU_B = 0;
-  
-  if (rank_col == CPU_A || rank_col == CPU_B)
-  {
-    send_row(v, cols+2, rows, 0, CPU_A, CPU_B);
-    send_row(v, cols+2, 1, rows+1, CPU_B, CPU_A);
-    send_row(dv, cols+2, rows, 0, CPU_A, CPU_B);
-    send_row(dv, cols+2, 1, rows+1, CPU_B, CPU_A);
-  }
-  
-  CPU_A = (rank_col % 2 == 0) ? rank_col : rank_col-1;
-  CPU_B = (rank_col % 2 == 1) ? rank_col : rank_col+1;
-  if (CPU_A >= 0 && CPU_B < size_col)
-  {
-    send_row(v, cols+2, rows, 0, CPU_A, CPU_B);
-    send_row(v, cols+2, 1, rows+1, CPU_B, CPU_A);
-    send_row(dv, cols+2, rows, 0, CPU_A, CPU_B);
-    send_row(dv, cols+2, 1, rows+1, CPU_B, CPU_A);
-  }
-  
-  CPU_A = (rank_col % 2 == 1) ? rank_col : rank_col-1;
-  CPU_B = (rank_col % 2 == 0) ? rank_col : rank_col+1;
-  if (CPU_A >= 0 && CPU_B < size_col)
-  {
-    send_row(v, cols+2, rows, 0, CPU_A, CPU_B);
-    send_row(v, cols+2, 1, rows+1, CPU_B, CPU_A);
-    send_row(dv, cols+2, rows, 0, CPU_A, CPU_B);
-    send_row(dv, cols+2, 1, rows+1, CPU_B, CPU_A);
-  }
-}
-
-static void send_col(double** v, size_t rows, size_t col_from, size_t col_to, int from, int to)
-{
-  double tmp[rows];
-  if (rank_row == from)
-  {
-    for (size_t r=0; r<rows; r++)
-      tmp[r] = v[r][col_from];
-    MPI_Send(tmp, rows, MPI_DOUBLE, to, 0, COMM_ROW);
-  }
-  if (rank_row == to)
-  {
-    MPI_Recv(tmp, rows, MPI_DOUBLE, from, 0, COMM_ROW, MPI_STATUS_IGNORE);
-    for (size_t r=0; r<rows; r++)
-      v[r][col_to] = tmp[r];
-  }
-}
-
-static void share_cols(double** v, double** dv, size_t cols, size_t rows)
-{
-  int CPU_A, CPU_B;
-  
-  CPU_A = size_row-1;
-  CPU_B = 0;
-  if (rank_row == CPU_A || rank_row == CPU_B)
-  {
-    send_col(v, rows+2, cols, 0, CPU_A, CPU_B);
-    send_col(v, rows+2, 1, cols+1, CPU_B, CPU_A);
-    send_col(dv, rows+2, cols, 0, CPU_A, CPU_B);
-    send_col(dv, rows+2, 1, cols+1, CPU_B, CPU_A);
-  }
-  
-  CPU_A = (rank_row % 2 == 0) ? rank_row : rank_row-1;
-  CPU_B = (rank_row % 2 == 1) ? rank_row : rank_row+1;
-  if (CPU_A >= 0 && CPU_B < size_row)
-  {
-    send_col(v, rows+2, cols, 0, CPU_A, CPU_B);
-    send_col(v, rows+2, 1, cols+1, CPU_B, CPU_A);
-    send_col(dv, rows+2, cols, 0, CPU_A, CPU_B);
-    send_col(dv, rows+2, 1, cols+1, CPU_B, CPU_A);
-  }
-  
-  CPU_A = (rank_row % 2 == 1) ? rank_row : rank_row-1;
-  CPU_B = (rank_row % 2 == 0) ? rank_row : rank_row+1;
-  if (CPU_A >= 0 && CPU_B < size_row)
-  {
-    send_col(v, rows+2, cols, 0, CPU_A, CPU_B);
-    send_col(v, rows+2, 1, cols+1, CPU_B, CPU_A);
-    send_col(dv, rows+2, cols, 0, CPU_A, CPU_B);
-    send_col(dv, rows+2, 1, cols+1, CPU_B, CPU_A);
-  }
+  int next = (rank_row + 1) % size_row;
+  int prev = (rank_row + size_row - 1) % size_row;
+  MPI_Datatype t;
+  MPI_Type_vector(rows+2, 1, cols+2, MPI_DOUBLE, &t);
+  MPI_Type_commit(&t);
+  MPI_Sendrecv(v+cols, 1, t, next, 0, v, 1, t, prev, 0, COMM_ROW, MPI_STATUS_IGNORE);
+  MPI_Sendrecv(v+1, 1, t, prev, 0, v+cols+1, 1, t, next, 0, COMM_ROW, MPI_STATUS_IGNORE);
+  MPI_Type_free(&t);
 }
 
 static void step_distributed(grid_t* grid, double dt)
@@ -286,25 +213,22 @@ static void step_distributed(grid_t* grid, double dt)
   size_t rows = pos(grid->nb_rows, rank_col+1, size_col) - pos(grid->nb_rows, rank_col, size_col);
   size_t cols = pos(grid->nb_columns, rank_row+1, size_row) - pos(grid->nb_columns, rank_row, size_row);
   
-  double **v = calloc(rows+2, sizeof(double*));
-  double **dv = calloc(rows+2, sizeof(double*));
-  for (size_t r=0; r<rows+2; r++)
-  {
-    v[r] = calloc(cols+2, sizeof(double));
-    dv[r] = calloc(cols+2, sizeof(double));
-  }
+  double *v = calloc((rows+2)*(cols+2), sizeof(double*));
+  double *dv = calloc((rows+2)*(cols+2), sizeof(double*));
   
   for (size_t r=0; r<rows; r++)
   {
     for (size_t c=0; c<cols; c++)
     {
-      v[r+1][c+1] = grid->grid[r][c].value;
-      dv[r+1][c+1] = grid->grid[r][c].dvalue;
+      v[(r+1)*(cols+2)+(c+1)] = grid->grid[r][c].value;
+      dv[(r+1)*(cols+2)+(c+1)] = grid->grid[r][c].dvalue;
     }
   }
   
-  share_rows(v, dv, cols, rows);
-  share_cols(v, dv, cols, rows);
+  share_rows(v, cols, rows);
+  share_cols(v, cols, rows);
+  share_rows(dv, cols, rows);
+  share_cols(dv, cols, rows);
   
   for (size_t r=0; r<rows; r++)
   {
@@ -313,13 +237,13 @@ static void step_distributed(grid_t* grid, double dt)
       if (grid->grid[r][c].type == VIBRATING || grid->grid[r][c].type == SENSOR)
       {
         double v2 = grid->grid[r][c].velocity * grid->grid[r][c].velocity;
-        grid->grid[r][c].value = v[r+1][c+1] + dt * dv[r+1][c+1];
-        grid->grid[r][c].dvalue = dv[r+1][c+1];
-        grid->grid[r][c].dvalue -= dt * v2 * 4 * v[r+1][c+1];
-        grid->grid[r][c].dvalue += dt * v2 * v[r][c+1];
-        grid->grid[r][c].dvalue += dt * v2 * v[r+1][c];
-        grid->grid[r][c].dvalue += dt * v2 * v[r+2][c+1];
-        grid->grid[r][c].dvalue += dt * v2 * v[r+1][c+2];
+        grid->grid[r][c].value = v[(r+1)*(cols+2)+(c+1)] + dt * dv[(r+1)*(cols+2)+(c+1)];
+        grid->grid[r][c].dvalue = dv[(r+1)*(cols+2)+(c+1)];
+        grid->grid[r][c].dvalue -= dt * v2 * 4 * v[(r+1)*(cols+2)+(c+1)];
+        grid->grid[r][c].dvalue += dt * v2 * v[(r)*(cols+2)+(c+1)];
+        grid->grid[r][c].dvalue += dt * v2 * v[(r+1)*(cols+2)+(c)];
+        grid->grid[r][c].dvalue += dt * v2 * v[(r+2)*(cols+2)+(c+1)];
+        grid->grid[r][c].dvalue += dt * v2 * v[(r+1)*(cols+2)+(c+2)];
       }
     }
   }
@@ -330,11 +254,6 @@ static void step_distributed(grid_t* grid, double dt)
       if (grid->grid[r][c].type == SENSOR)
         grid->records[id_record++] += grid->grid[r][c].value * grid->grid[r][c].value;
   
-  for (size_t r=0; r<rows+2; r++)
-  {
-    free(v[r]);
-    free(dv[r]);
-  }
   free(v);
   free(dv);
 }
